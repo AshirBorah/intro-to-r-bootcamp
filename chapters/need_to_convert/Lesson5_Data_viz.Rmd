@@ -1,0 +1,692 @@
+---
+title: "Data viz with ggplot2"
+author: James McFarland
+date: 2019-10-28
+output: 
+  ioslides_presentation:
+    transition: faster
+    highlight: haddock
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE)
+```
+
+```{r, include = FALSE}
+library(gapminder)
+library(ggrepel)
+library(tidyverse)
+
+gapminder <- gapminder %>% 
+  mutate(country = as.character(country),
+         continent = as.character(continent))
+```
+
+## Credits
+
+https://ismayc.github.io/talks/ness-infer/slide_deck.html#54
+
+
+## BaseR plotting
+
+- Don't look as good
+
+- Hard to build more complex plots, and fine-tune 
+
+
+## Grammar of graphics
+
+- Wilkinson (2005) laid out "Grammar of Graphics"
+
+<img src="../images/grammar_graphics.jpg" width="30%">
+
+## ggplot2
+
+- Hadley Wickham implemented grammar in R package `ggplot2`
+
+<!-- <img src="../images/ggplot2.jpg" width="30%"> -->
+
+<img src="../images/ggplot2_hex.png" width="20%">
+
+
+## ggplot2 philosophy
+
+What is a statistical graphic?
+
+- Take variables from a `dataset`
+
+- `map` them to `aes()`thetic attributes
+
+- `geom_`etric objects
+
+
+## Example with Gapminder data
+
+How are variables mapped to aesthetic attributes of points?
+
+```{r, echo = FALSE}
+gapminder %>% 
+  filter(year == 1992) %>% 
+  mutate(gdp = gdpPercap * pop / 1e9) %>% 
+  ggplot(aes(gdp, lifeExp)) + 
+  geom_point(aes(color = continent, size = pop)) + 
+  scale_x_log10() +
+  xlab('Gross Domestic Product (Billions $)') +
+  ylab('Life Expectancy at birth (years)') +
+  ggtitle('Gapminder for 1992')
+```
+
+## How to use it?
+
+Construct a graphic by adding modular pieces
+
+- `ggplot(data, mapping)`
+
+- Add 'layers' of geometric objects
+
+- Adjustments to axis scales, colors, labels, asthetic mods
+
+- "Chaining" together components (use `+` rather than `%>%`)
+
+
+
+## Let's try a scatterplot
+
+```{r}
+gap_92 <- gapminder %>% 
+  filter(year == 1992) %>% 
+  mutate(gdp = gdpPercap * pop / 1e9) 
+gap_92 %>% head(4)
+```
+
+## Let's try a scatterplot
+
+```{r, fig.width = 4, fig.height = 3.5}
+ggplot(gap_92, mapping = aes(x = gdp, y = lifeExp)) + 
+  geom_point()
+```
+
+## Adding more aesthetic mappings
+
+```{r, fig.width = 5, fig.height = 3.5}
+ggplot(gap_92, mapping = aes(x = gdp, y = lifeExp, shape = continent)) + 
+  geom_point()
+```
+
+## Scales {.smaller}
+
+```{r, fig.width = 3.5, fig.height = 3}
+ggplot(gap_92, mapping = aes(x = gdp, y = lifeExp)) + 
+  geom_point() +
+  scale_x_log10() 
+```
+
+- Change scaling of x- and y-axes (also reverse axes)
+
+- Change which colors etc. get applied to which values  
+
+
+## Labels {.smaller}
+
+- `labs` function adds custom axis labels and titles
+
+```{r, fig.width = 3.5, fig.height = 3}
+ggplot(gap_92, mapping = aes(x = gdp, y = lifeExp)) + 
+  geom_point() +
+  scale_x_log10() +
+  labs(x = 'Gross Domestic Product (Billions $)',
+       y = 'Life Expectancy at birth (years)',
+       title = 'Gapminder for 1992')
+```
+
+## Practice {.smaller}
+
+- Try to make this plot
+
+```{r, echo = FALSE, fig.width = 6, fig.height = 4.5}
+ggplot(gap_92, mapping = aes(gdp, lifeExp, color = continent, size = pop)) + 
+  geom_point() + 
+  scale_x_log10() +
+  labs(x = 'Gross Domestic Product (Billions $)',
+       y = 'Life Expectancy at birth (years)',
+       title = 'Gapminder for 1992')
+```
+
+
+
+## Key geoms
+
+- Scatterplot: `geom_point()`
+
+- Line graph: `geom_line()`
+
+- Smoothing functions: `geom_smooth()` 
+
+- Text: `geom_text()`
+
+- Histogram: `geom_histogram()`
+
+- Boxplot: `geom_boxplot`
+
+- Bar graph: `geom_bar()`
+
+
+## geom_line 
+
+```{r, fig.width = 4, fig.height = 3.5}
+df <- gapminder %>% 
+  filter(country == 'Romania') 
+ggplot(df, mapping = aes(x = year, y = lifeExp)) + 
+  geom_line()
+```
+
+## Layering geoms {.smaller}
+
+We can add as many geoms to a plot as we want, stacked on as 'layers' in order
+
+```{r, fig.width = 4.5, fig.height = 3.5}
+ggplot(df, mapping = aes(x = year, y = lifeExp)) + 
+  geom_line() +
+  geom_point()
+```
+
+---
+
+What if we had multiple data points per year?
+
+```{r, fig.width = 4, fig.height = 3.5}
+df <- gapminder %>% 
+  filter(country %in% c('Romania', 'Thailand'))
+ggplot(df, mapping = aes(x = year, y = lifeExp)) + 
+  geom_line() +
+  geom_point()
+```
+
+--- 
+
+Need to separate them by country (`group` aesthetic)
+
+```{r, fig.width = 4, fig.height = 3.5}
+ggplot(df, mapping = aes(x = year, y = lifeExp, group = country)) + 
+  geom_line() +
+  geom_point()
+```
+
+--- 
+
+Often useful to color lines by group, use `color` aesthetic with a categorical variable and it automatically groups
+
+```{r, fig.width = 4.5, fig.height = 3.5}
+ggplot(df, mapping = aes(x = year, y = lifeExp, color = country)) + 
+  geom_line() +
+  geom_point()
+```
+
+## Multiple aesthetic mappings
+
+- Set default mapping in `ggplot` but can override this for individual geoms
+
+```{r, fig.width = 4.5, fig.height = 3.5}
+ggplot(df, mapping = aes(x = year, y = lifeExp)) + 
+  geom_line(mapping = aes(color = country)) +
+  geom_point()
+```
+
+## Multiple aesthetic mappings
+
+- You can 'hard-code' aesthetic properties for each geom
+
+```{r, fig.width = 4.5, fig.height = 3.5}
+ggplot(df, mapping = aes(x = year, y = lifeExp, color = country)) + 
+  geom_line(linetype = 2, size = 1.5) +
+  geom_point(color = 'black', size = 3, alpha = 0.75)
+```
+
+
+## Some notes on using color
+
+If we map a continuous variable to color it won't group automatically
+
+```{r, fig.width = 4.5, fig.height = 3.5}
+ggplot(df, mapping = aes(x = year, y = lifeExp, color = gdpPercap)) + 
+  geom_line() +
+  geom_point(size = 3)
+```
+
+## Some notes on using color
+
+We need to specify group manually
+
+```{r, fig.width = 4.5, fig.height = 3.5}
+ggplot(df, mapping = aes(x = year, y = lifeExp, 
+                         group = country, color = gdpPercap)) + 
+ geom_line() +
+  geom_point(size = 3)
+```
+
+## Some notes on using color {.smaller}
+
+- Assume continuous map for numeric data, discrete map for strings
+
+- Make numeric data into factors if you want discrete colors
+
+```{r, fig.width = 4.5, fig.height = 3.5}
+my_df <- gapminder %>% 
+  filter(year %in% c(1957, 1977, 1997)) 
+ggplot(my_df, mapping = aes(x = gdpPercap, y = lifeExp, color = factor(year))) + 
+  geom_point() +
+  scale_x_log10() +
+  labs(color = 'year')
+```
+
+
+
+## Color palettes {.smaller}
+
+We can use `scale_color_manual` to set the color of each group manually
+
+```{r, fig.width = 4.5, fig.height = 3.5}
+my_cols <- c(Romania = 'green', Thailand = 'orange')
+
+ggplot(df, mapping = aes(x = year, y = lifeExp, color = country)) + 
+  geom_line() +
+  scale_color_manual(values = my_cols)
+```
+
+---
+
+`scale_color_brewer` offers some useful default color schemes
+
+```{r, fig.width = 4.5, fig.height = 3.5}
+ggplot(df, mapping = aes(x = year, y = lifeExp, color = country)) + 
+  geom_line() +
+  scale_color_brewer(palette = 'Dark2')
+```
+
+
+## Rcolorbrewer {.smaller}
+
+<img src="../images/rcolorbrewer.png" width="40%">
+
+https://www.r-bloggers.com/a-detailed-guide-to-ggplot-colors/
+
+
+**Practice**
+
+
+## when geom_line doesn't work {.smaller}
+
+
+```{r, fig.width = 4, fig.height = 3.5}
+ggplot(gap_92, mapping = aes(x = gdp, y = lifeExp)) + 
+  geom_line() +
+  geom_point() + 
+  scale_x_log10() +
+  labs(x = 'Gross Domestic Product (Billions $)',
+       y = 'Life Expectancy at birth (years)') 
+```
+
+
+## geom_smooth {.smaller}
+
+```{r, fig.width = 4, fig.height = 3.5}
+ggplot(gap_92, mapping = aes(x = gdp, y = lifeExp)) + 
+  geom_point() + 
+  geom_smooth() +
+  scale_x_log10() +
+  labs(x = 'Gross Domestic Product (Billions $)', y = 'Life Expectancy at birth (years)') 
+```
+
+## geom_smooth (linear regression) {.smaller}
+
+```{r, fig.width = 4, fig.height = 3.5}
+ggplot(gap_92, mapping = aes(x = gdp, y = lifeExp)) + 
+  geom_point() + 
+  geom_smooth(method = 'lm') +
+  scale_x_log10() +
+  labs(x = 'Gross Domestic Product (Billions $)', y = 'Life Expectancy at birth (years)') 
+```
+
+## geom_smooth to simplify plots
+
+```{r, fig.width = 4.5, fig.height = 3.5}
+ggplot(gapminder, mapping = aes(x = year, y = lifeExp, color = continent)) + 
+  geom_point() 
+```
+
+## geom_smooth to simplify plots
+
+```{r, fig.width = 4.5, fig.height = 3.5}
+ggplot(gapminder, mapping = aes(x = year, y = lifeExp, color = continent)) + 
+  geom_smooth() 
+```
+
+**Practice**
+
+
+## Facets {.smaller}
+
+```{r, fig.width = 6.5, fig.height = 3.5}
+gap_early <- gapminder %>% 
+  filter(year < 1970)
+ggplot(gap_early, mapping = aes(x = gdpPercap, y = lifeExp)) + 
+  geom_point() + 
+  geom_smooth(se = FALSE) +
+  scale_x_log10() +
+  facet_wrap(~continent)
+```
+
+---
+
+```{r, fig.width = 6.5, fig.height = 4.5}
+ggplot(gap_early, mapping = aes(x = gdpPercap, y = lifeExp)) + 
+  geom_point() + 
+  geom_smooth(se = FALSE) +
+  scale_x_log10() +
+  facet_grid(year ~ continent)
+```
+
+
+**Practice**
+
+
+## geom_text {.smaller}
+
+```{r, include = FALSE}
+gap_df <- gapminder %>% 
+  filter(year == 1992, continent == 'Americas') %>% 
+  mutate(gdp = gdpPercap * pop / 1e9) %>% 
+  head(20) 
+```
+
+```{r, fig.width= 4.5, fig.height=4}
+ggplot(gap_df, mapping = aes(x = gdp, y = lifeExp, label = country)) + 
+  geom_point() + 
+  geom_smooth(method = 'lm', se = FALSE) +
+  scale_x_log10() +
+  geom_text() +
+  labs(x = 'Gross Domestic Product (Billions $)', y = 'Life Expectancy at birth (years)') 
+```
+
+
+## ggrepel {.smaller}
+
+```{r, eval = FALSE}
+library(ggrepel)
+```
+
+```{r, fig.width= 3.5, fig.height=3}
+ggplot(gap_df, mapping = aes(x = gdp, y = lifeExp)) + 
+  geom_point() + 
+  geom_smooth(method = 'lm', se = FALSE) +
+  scale_x_log10() +
+  labs(x = 'Gross Domestic Product (Billions $)', y = 'Life Expectancy at birth (years)') + 
+  geom_label_repel(aes(label = country), size = 2.5) 
+```
+
+
+
+## geom_histogram {.smaller}
+
+```{r, fig.width= 4, fig.height=3.5}
+ggplot(gapminder, mapping = aes(x = gdpPercap)) +
+  geom_histogram()
+```
+
+--- 
+
+```{r, fig.width= 4, fig.height=3.5}
+ggplot(gapminder, mapping = aes(x = gdpPercap)) +
+  geom_histogram() +
+  scale_x_log10()
+```
+
+## geom_histogram {.smaller}
+
+- Change number of bins (can specify details of bin positions)
+
+```{r, fig.width= 4, fig.height=3.5}
+gapminder %>% 
+  ggplot(aes(gdpPercap)) +
+  geom_histogram(bins = 100) +
+  scale_x_log10()
+```
+
+
+## geom_histogram {.smaller}
+
+- Encode different continents in different colors
+
+```{r, fig.width= 5, fig.height=3.5}
+ggplot(gapminder, mapping = aes(x = gdpPercap, color = continent)) +
+  geom_histogram() +
+  scale_x_log10()
+```
+
+## fill vs color {.smaller}
+
+```{r, fig.width= 5, fig.height=3.5}
+ggplot(gapminder, mapping = aes(x = gdpPercap, fill = continent)) +
+  geom_histogram() +
+  scale_x_log10()
+```
+
+
+## geom_density {.smaller}
+
+```{r, fig.width= 4, fig.height=3.5}
+ggplot(gapminder, mapping = aes(x = gdpPercap)) +
+  geom_density() +
+  scale_x_log10()
+```
+
+
+## geom_density {.smaller}
+
+- Separate by continent and give spearate `fill` colors
+
+```{r, fig.width= 5, fig.height=3.5}
+ggplot(gapminder, mapping = aes(x = gdpPercap, fill = continent)) +
+  geom_density(alpha = 0.5) +
+  scale_x_log10()
+```
+
+## geom_boxplot {.smaller}
+
+```{r, fig.width= 4, fig.height=3.5}
+ggplot(gapminder, mapping = aes(x = continent, y = gdpPercap)) +
+  geom_boxplot() +
+  scale_y_log10()
+```
+
+## geom_violin {.smaller}
+
+```{r, fig.width= 4, fig.height=3.5}
+ggplot(gapminder, mapping = aes(x = continent, y = gdpPercap)) +
+  geom_violin() +
+  scale_y_log10()
+```
+
+## What if I want to control the order? {.smaller}
+
+- Need to use the idea of a `factor`
+
+- Factors used to encode categorical variables, specify the possible 'levels', and optionally an ordering
+
+```{r}
+cont_order <- c('Oceania', 'Europe', 'Americas', 'Asia', 'Africa')
+gap_cat <- gapminder %>% 
+  mutate(continent = factor(continent, levels = cont_order))
+```
+
+## What if I want to control the order? {.smaller}
+
+```{r, fig.width= 4, fig.height=3.5}
+ggplot(gap_cat, mapping = aes(x = continent, y = gdpPercap)) +
+  geom_violin() +
+  scale_y_log10()
+```
+
+## Geom_beeswarm
+
+```{r, fig.width= 4, fig.height=3.5}
+library(ggbeeswarm)
+ggplot(gap_cat, mapping = aes(x = continent, y = gdpPercap)) +
+  geom_beeswarm(size = 0.5, alpha = 0.75) +
+  scale_y_log10()
+```
+
+**Practice**
+
+## Quick test {.smaller}
+
+```{r}
+head(mtcars, 5)
+```
+
+Now I want to make a boxplot of horsepower for cars with different numbers of cylinders
+
+--- 
+
+```{r, fig.width= 4, fig.height=3.5}
+ggplot(mtcars, mapping = aes(x = cyl, y = hp)) + 
+  geom_boxplot()
+```
+
+---
+
+```{r, fig.width= 4, fig.height=3.5}
+ggplot(mtcars, mapping = aes(x = factor(cyl), y = hp)) + 
+  geom_boxplot()
+```
+
+
+
+## geom_bar {.smaller}
+
+- This gives an error
+
+```{r, include = FALSE}
+gap_82 <- gapminder %>% 
+  filter(year == 1982, continent == 'Americas')
+```
+
+```{r, eval = FALSE}
+gap_82 <- gapminder %>% 
+  filter(year == 1982, continent == 'Americas')
+ggplot(gap_82, mapping = aes(x = country, y = gdpPercap)) + 
+  geom_bar()
+```
+
+## geom_bar {.smaller}
+
+- Need `stat = 'identity'`
+
+```{r, fig.width= 4, fig.height=3.5}
+ggplot(gap_82, mapping = aes(x = country, y = gdpPercap)) + 
+  geom_bar(stat = 'identity')
+```
+
+
+
+## theme
+
+- You can customize MANY details of the plot using the `theme` function
+
+- It's a bit complicated at first, but most common changes are easy to google.
+
+
+## Saving your plots
+
+- `ggsave`
+
+```{r, eval = FALSE}
+ggplot(gapminder, mapping = aes(x = continent, y = gdpPercap)) +
+  geom_violin() +
+  scale_y_log10()
+ggsave(filename = here::here('results', 'my_fig.png'))
+```
+
+- Using the Rstudio GUI
+
+**Practice**
+
+
+
+
+## plotly
+
+- Tool for making interactive plots in R
+
+- Can convert ggplot2 plots into interactive form using the `ggplotly` function
+
+**Practice**
+
+
+## Resources
+
+https://www.r-graph-gallery.com/index.html
+
+
+
+## Beautification
+
+```{r, include = FALSE}
+my_plot <- gapminder %>% 
+  filter(year == 1992) %>% 
+  mutate(gdp = gdpPercap * pop / 1e9) %>% 
+  ggplot(aes(gdp, lifeExp)) + 
+  geom_point(aes(color = continent, size = pop)) + 
+  scale_x_log10() +
+  xlab('Gross Domestic Product (Billions $)') +
+  ylab('Life Expectancy at birth (years)') +
+  ggtitle('Gapminder for 1992')
+```
+
+```{r, fig.width=5, fig.height=4, echo = FALSE}
+my_plot
+```
+
+---
+
+```{r, fig.width=5, fig.height=4}
+my_plot + theme_minimal()
+```
+
+
+https://ggplot2.tidyverse.org/reference/ggtheme.html
+
+
+## ggpubr
+
+```{r, fig.width= 4, fig.height=3.5}
+library(ggpubr)
+my_comparisons <- list( c("Africa", "Asia"), c('Europe', 'Oceania'))
+ggplot(gapminder, mapping = aes(x = continent, y = gdpPercap)) +
+  geom_violin() +
+  scale_y_log10() +
+  stat_compare_means(method = 'wilcox.test', comparisons = my_comparisons)
+```
+
+
+
+## cowplot {.smaller}
+
+Great tool for combining multiple 'panels' into one plot
+
+```{r, fig.width=7, fig.height=3}
+library(cowplot)
+
+p1 <- ggplot(mtcars, aes(disp, mpg)) + 
+  geom_point()
+p2 <- ggplot(mtcars, aes(qsec, mpg)) +
+  geom_point()
+plot_grid(p1, p2, labels = c('A', 'B'))
+```
+
+## complexheatmap
+
+https://jokergoo.github.io/ComplexHeatmap-reference/book/more-examples.html#add-more-information-for-gene-expression-matrix
+

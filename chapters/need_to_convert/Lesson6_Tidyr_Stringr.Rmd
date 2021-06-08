@@ -1,0 +1,548 @@
+---
+title: "Tidyr and stringr"
+author: James McFarland
+date: 2019-10-29
+output: 
+  ioslides_presentation:
+    transition: faster
+    highlight: haddock
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r, include = FALSE}
+library(tidyverse)
+library(gapminder)
+```
+
+## Overview
+
+- Topic 1: Formatting data the tidyverse way
+
+- Topic 2: String-wrangling
+
+## Overview
+
+<img src="../images/tidyverse_website.png">
+
+
+## Refs
+
+https://ismayc.github.io/talks/ness-infer/slide_deck.html#85
+
+https://stringr.tidyverse.org/
+
+
+```{r, include = FALSE}
+gp_1 <- gapminder %>% 
+  mutate(gdp = pop * gdpPercap) %>% 
+  dplyr::select(country, continent, year, pop, gdp)
+gp_2 <- gp_1 %>% 
+  gather(-c(country, continent, year), key = 'type', value = 'value') %>% 
+  arrange(country, year)
+gp_3 <- gp_1 %>% 
+  mutate(gdp = round(gdp),
+         gdpPercap = paste0(gdp, '/', pop)) %>% 
+  select(-c(pop, gdp))
+gp_4 <- gp_1 %>% 
+  filter(year < 1970) %>% 
+  select(country, year, gdp) %>% 
+  spread(key = year, value = gdp)
+```
+
+
+
+## Tidy data
+
+<img src="../images/tidy-1.png" width="100%">
+
+1) Each variable forms a column.
+
+2) Each observation forms a row.
+
+3) Each type of observational unit forms a table
+
+
+## Return of gapminder {.smaller}
+
+
+```{r, echo = FALSE}
+head(gp_1, 3)
+```
+
+```{r, fig.width = 4.5, fig.height = 3}
+gp_1 %>% 
+  mutate(gpdPerCap = gdp / pop) %>% 
+  filter(country %in% c('Serbia', 'Spain', 'Turkey')) %>% 
+  ggplot(aes(year, gpdPerCap, color = country)) + 
+  geom_line()
+```
+
+## Is this tidy? 
+
+```{r, echo = FALSE}
+head(gp_2, 4)
+```
+
+## Is this tidy? 
+
+```{r, echo = FALSE}
+head(gp_2, 4)
+```
+
+- What would it take to plot gdpPercap vs year?
+
+
+## Is this data tidy?
+
+```{r, echo = FALSE}
+head(gp_3, 4)
+```
+
+
+
+## Is this data tidy? 
+
+```{r, echo = FALSE}
+head(gp_4, 4)
+```
+
+
+
+## Tidyr package
+
+“Happy families are all alike; every unhappy family is unhappy in its own way.” –– Leo Tolstoy
+
+“Tidy datasets are all alike, but every messy dataset is messy in its own way.” –– Hadley Wickham
+
+- Most common causes of 'non-tidy' data:
+
+1) One variable is spread across multiple columns
+
+2) One observation is scattered across multiple rows
+
+- Introducing the `tidyr` package, and key functions `spread()` and `gather()`
+
+- [Hadley Wickham's paper](https://vita.had.co.nz/papers/tidy-data.pdf)
+
+## Gather 
+
+- When column names are not names of variables, but *values* of a variable
+
+```{r}
+head(gp_4)
+```
+
+
+## Gather {.smaller}
+
+- Need to **gather** those 'value columns' into a new pair of variables, one to store the variable in the column names, the other to store the variable spread out over cells in the table
+
+- Need to specify:
+
+  - The name of the variable whose values form column names (called the `key`)
+  
+  - The name of the variable whose values are spread over the cells (called the `value`)
+  
+  - The set of columns that represent values not variables
+
+<img src="../images/tidy-9.png" width="70%">
+
+
+## Gather {.smaller}
+
+```{r}
+head(gp_4)
+```
+
+```{r}
+gp_4 %>% 
+  gather('1952', '1957', '1962', '1967', key = 'year', value = 'gdp') 
+```
+
+## Gather {.smaller}
+
+- Can also specify which rows *not* to include
+
+```{r, eval = FALSE}
+gp_4 %>% 
+  gather(-'country', key = 'year', value = 'gdp')
+```
+
+- Or can specify a range of rows
+
+```{r, eval = FALSE}
+gp_4 %>% 
+  gather('1952':'1967', key = 'year', value = 'gdp')
+```
+
+
+## Spread {.smaller}
+
+- `spread()` is the opposite of `gather()`
+
+- Use it when an observation is scattered across multiple rows
+
+```{r}
+gp_2
+```
+
+## Spread
+
+- Need to specify:
+
+  - The column containing the variable names (the `key` column). Here it's `type`
+  
+  - The column containing the values from multiple variables (the `value` column). Here it's `value`
+
+## Spread {.smaller}
+
+```{r}
+gp_2 %>% 
+  spread(key = type, value = value) %>% 
+  head(5)
+```
+
+<img src="../images/tidy-8.png" width="60%">
+
+
+## separate
+
+- When multiple variables are encoded in a single column
+
+```{r}
+gp_3
+```
+
+## separate {.smaller}
+
+```{r}
+gp_3 %>% 
+  separate(col = gdpPercap, into = c('gdp', 'pop'), sep = '/')
+```
+
+- But note that gdp and pop are stored as characters!
+
+## separate {.smaller}
+
+```{r}
+gp_3 %>% 
+  separate(col = gdpPercap, into = c('gdp', 'pop'), sep = '/') %>% 
+  mutate(gdp = as.numeric(gdp),
+         pop = as.numeric(pop))
+```
+
+## separate {.smaller}
+
+- You can also split values of a column by 'position'
+
+```{r}
+gp_1 %>% 
+  separate(col = year, into = c('century', 'year'), sep = 2)
+```
+
+## String manipulation {.smaller}
+
+Imagine your genomic dataset has genes given like this:
+
+```{r}
+gene_name_IDs <- c('EML1 (2009)', 'ATG2B (55102)', 'STAG3 (10734)')
+```
+
+- How would you pull out the HUGO symbol?
+
+- What about the Entrez ID?
+
+
+## String manipulation {.smaller}
+
+[stringr cheatsheet](https://github.com/rstudio/cheatsheets/blob/master/strings.pdf)
+
+- Get length of strings
+
+- Collapse strings, or split into separate strings
+
+- Replace one pattern of text with another
+
+- Extract strings that match a pattern
+
+
+## str_length
+
+- get length of each string in a vector
+
+```{r}
+str_vec <- c("why", "video", "cross", "extra", "deal", "authority")
+```
+
+```{r}
+str_length(str_vec) 
+```
+
+## str_c
+
+- collapse vector of strings into a single string
+
+```{r}
+str_c('a', 'dog', 'walked', 'into', 'a', 'bar')
+```
+
+```{r}
+str_c('a', 'dog', 'walked', 'into', 'a', 'bar', sep = ' ')
+```
+
+```{r}
+address <- c('Main St.', 'Ames St.', 'Brookline Ave.')
+nums <- c(415, 75, 450)
+str_c(nums, address, sep = ' ')
+```
+
+
+## str_sub
+
+- pull out a subsequence of each string
+
+```{r}
+str_vec <- c("why", "video", "cross", "extra", "deal", "authority")
+```
+
+```{r}
+str_sub(str_vec, 2, 3)
+```
+
+## str_replace {.smaller}
+
+- Replace pattern with a substitute pattern
+
+```{r}
+str_vec <- c("why", "video", "cross", "extra", "deal", "authority")
+```
+
+```{r}
+str_replace(str_vec, "y", "?")
+```
+
+
+## str_subset {.smaller}
+
+- Restrict list to strings that contain a pattern match
+
+```{r}
+str_vec <- c("why", "video", "cross", "extra", "deal", "authority")
+```
+
+```{r}
+str_subset(str_vec, 'd')
+```
+
+```{r}
+str_subset(str_vec, 'de')
+```
+
+- `str_detect` returns a TRUE/FALSE vector (useful with `filter()`)
+
+
+## str_extract {.smaller}
+
+- Pull out the matching sequences from each string
+
+```{r}
+str_vec <- c("why", "floss", "cross", "extra", "boss")
+```
+
+```{r}
+str_extract(str_vec, 'oss')
+```
+
+
+
+## String manipulation with dplyr {.smaller}
+
+```{r}
+db <- c('GO', 'KEGG', 'GO', 'GO', 'KEGG')
+gset <- c('interferon signaling', 'interferon signaling', 'NFKB signaling', 'ER-nucleus signaling', 'TP53 pathway')
+pathways <- tibble(db, gset)
+```
+
+```{r}
+pathways
+```
+
+## String manipulation with dplyr {.smaller}
+
+Make a new column that combines multiple string columns (opposite of `separate`)
+
+```{r}
+pathways %>% 
+  mutate(db_gset = str_c(db, gset, sep = '_'))
+```
+
+## String manipulation with dplyr {.smaller}
+
+Modify text in a column
+
+```{r}
+pathways %>% 
+  mutate(db_gset = str_replace(gset, 'signaling', 'sig.'))
+```
+
+## String manipulation with dplyr {.smaller}
+
+Filter based on properties of string column (e.g. its length)
+
+```{r}
+pathways %>% 
+  filter(str_length(db) > 2)
+```
+
+
+## String manipulation with dplyr {.smaller}
+
+Filter to rows matching a certain text pattern
+
+```{r}
+pathways %>% 
+  filter(str_detect(gset, 'interferon'))
+```
+
+
+## regular expressions
+
+- Rules for extracting patterns in text using special syntax
+
+- Specify set of characters to seek out, possibly with info on repeats and location within the string
+
+- (tutorial)[https://medium.com/factory-mind/regex-tutorial-a-simple-cheatsheet-by-examples-649dc1c3f285]
+
+- Sam Meier's 2018 lectures (#8)
+
+## regexp (position) {.smaller}
+
+- `^`: matches the start of the string.
+
+- `$`: matches the end of the string.
+
+```{r}
+strings <- c("abcd", "cdab", "cabd", "c abd")
+```
+
+```{r}
+str_subset(strings, 'ab')
+```
+
+```{r}
+str_subset(strings, '^ab')
+```
+
+## regexp (quantifiers) {.smaller}
+
+- `*`: matches at least 0 times.
+
+- `+`: matches at least 1 times.
+
+```{r}
+strings <- c("a", "ab", "acb", "accb", "acccb", "accccb")
+```
+
+```{r}
+str_subset(strings, "ac*b")
+```
+
+```{r}
+str_subset(strings, "ac+b")
+```
+
+
+## regexp (operators) {.smaller}
+
+- `.`: (wildcard) matches any single character
+
+- `[...]`: matches any character in a set
+
+- `|`: matches either pattern on either side
+
+```{r}
+strings <- c("ab", "abc", "adc", "abd", "abe", "ab 12")
+```
+
+```{r}
+str_subset(strings, 'a.c')
+```
+
+```{r}
+str_subset(strings, 'ab[cde]') 
+# str_subset(strings, 'ab[c-e]') #same using a range
+```
+
+## regexp (character classes) {.smaller}
+
+- `[:digit:]` same as `[0-9]`
+- `[:alpha:]` all alphabetic characters (either case)
+- `[:alnum:]` all alphanumeric characters 
+- `[:space:]` any whitespace character
+
+```{r}
+strings <- c("ab", "abc", "adc", "abd", "abe", "ab 12")
+```
+
+```{r}
+str_subset(strings, 'ab[:alnum:]')
+```
+
+
+## regexp (escaping) {.smaller}
+
+
+```{r}
+strings <- c('dog', 'cat', 'th*s')
+```
+
+This gives an error
+
+```{r, eval = FALSE}
+str_subset(strings, "*")
+```
+
+Need to 'escape' the interpretation of '*' by preceeding it with `\\`
+
+```{r}
+str_subset(strings, "\\*")
+```
+
+
+```{r}
+gapminder %>% 
+  filter(str_detect(country, '^New '))
+```
+
+## An example putting things together {.smaller}
+
+```{r, include = FALSE}
+GO <- read_tsv(here::here('data', "gprofiler_results_Mov10oe.csv")) %>% select(term.id, term.name)
+```
+
+```{r}
+head(GO, 5)
+```
+
+## An example putting things together {.smaller}
+
+```{r}
+GO %>% 
+  mutate(term.name = tolower(term.name)) %>% 
+  filter(str_detect(term.name, 'bolic')) %>% 
+  mutate(type_of_bolic = str_extract(term.name, '[:alnum:]+bolic')) %>% 
+  head(5)
+```
+
+
+## Practice 
+
+- WHO dataset in `tidyr::who` contains information on number of TB cases broken down by year, country, age gender, and diagnosis method. 
+
+- But the data are NOT tidy
+

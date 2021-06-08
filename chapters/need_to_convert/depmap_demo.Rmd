@@ -1,0 +1,83 @@
+---
+title: "What's in it for me?"
+author: James McFarland
+date: 2019-10-25
+output:
+  html_document:
+    theme: spacelab
+    code_folding: show
+    highlight: tango
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE)
+```
+
+## Load packages
+
+```{r}
+library(here)
+library(useful)
+library(tidyverse)
+library(plotly)
+library(DT)
+```
+
+## Load data
+
+Let's load the following files from the DepMap 19Q3 data release, all of which can be downloaded from the depmap.org portal:
+
+- sample_info (metadata)
+
+- RNA-seq gene expression (TPM for protein coding genes)
+
+- Achilles dependency (CERES scores)
+
+```{r}
+#cell line metadata
+cell_line_meta <- read_csv(here::here('data', 'sample-info-19q3_v2-19q3-sample-info-20190719.csv')) 
+
+#load gene expression data and keep only the cell line IDs and the MDM2 expression levels
+CCLE_GE <- read_csv(here::here('data', 'depmap-rnaseq-expression-data_v14-ccle-depmap-19q3-tpm-proteincoding.csv')) %>% 
+  select(DepMap_ID = X1, MDM2_GE = `MDM2 (4193)`)
+
+#load the Achilles data and keep only the cell line IDs and the MDM2 dependency scores
+Achilles_dep <- read_csv(here::here('data', 'avana-public-19q3_v5-gene-effect.csv')) %>% 
+  select(DepMap_ID = X1, MDM2_dep = `MDM2 (4193)`)
+```
+
+## Make table
+
+Use only the cell lines labeled as metastatic samples, and combine all this info into a single table
+
+```{r}
+cell_line_data <- cell_line_meta %>% 
+  filter(primary_or_metastasis == 'Metastasis') %>% 
+  select(DepMap_ID, CCLE_name = `CCLE Name`, lineage, lineage_subtype) %>% 
+  inner_join(CCLE_GE, by = 'DepMap_ID') %>% 
+  inner_join(Achilles_dep, by = 'DepMap_ID')
+```
+
+Make a table showing the average MDM2 dependency and mRNA expression for each lineage
+
+```{r}
+cell_line_data %>% 
+  group_by(lineage) %>% 
+  summarise(avg_MDM2_dep = mean(MDM2_dep, na.rm=TRUE),
+            avg_MDM2_GE = mean(MDM2_GE, na.rm=TRUE)) %>% 
+  arrange(avg_MDM2_dep) %>% 
+  datatable(rownames = FALSE)
+```
+
+## Make plot
+
+Make an interactive scatterplot of MDM2 expression and dependency status across these cell lines
+
+```{r, fig.width=10, fig.height = 6}
+g <- ggplot(cell_line_data, mapping = aes(x = MDM2_GE, y = MDM2_dep, color = lineage, text = CCLE_name)) + 
+  geom_point() +
+  labs('MDM2 GE (log2(TPM))', y = 'MDM2 dependency')
+ggplotly(g)
+```
+
+

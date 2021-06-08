@@ -1,0 +1,287 @@
+---
+title: "Lesson2_Functions"
+author: James McFarland
+date: 2019-10-24
+output: 
+  ioslides_presentation:
+    transition: faster
+    highlight: haddock
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+## What are functions?
+
+- Self-contained modules of code that accomplish a specific task
+
+```{r, eval = FALSE}
+output <- do_the_thing(input1, input2)
+```
+
+- Inputs (**arguments**) can include:
+
+  - the object on which the function acts
+  
+  - additional parameters that specify how the function acts (options)
+
+
+## Example functions
+
+```{r}
+#Examples
+num_vec <- 1:10
+avg_of_vec <- mean(num_vec)
+print(avg_of_vec)
+```
+
+- Functions don't need to provide output, or take inputs
+
+```{r, eval = FALSE}
+save(object_to_save, file = 'data_file')
+```
+
+```{r}
+getwd()
+```
+
+
+## Mathematical functions
+
+- Functions that operate on individual values:
+
+  - `sqrt()`
+  - `abs()`
+  - `log()`
+  - `exp()` 
+
+- Functions that estimate statistics across a set of values:
+  
+  - `mean()`
+  - `median()`
+  - `max()`
+
+**Practice**
+
+
+## Getting help 
+
+- Understanding how to get help effectively is the most important skill!
+
+```{r, eval = FALSE}
+?my_function
+```
+
+- Or use the `Help` tab in RStudio to search.
+
+
+## Function help
+
+Documentation is typically divided into sections.
+
+- `Description`
+
+- Example `Usage`
+
+- What are the inputs (`Arguments`)?
+
+- What does it return (`Value`) ?
+
+- Some inputs are optional (and have default settings). Look at the `signature`
+
+**Practice**
+
+
+
+
+## Tips on using functions
+
+- Use tab-complete to quickly check function inputs.
+
+- Best to name arguments explicitly (at least the optional ones)
+
+```{r, eval = FALSE}
+round(pi, digits = 2) #this is better
+round(pi, 2) #not as good
+```
+
+
+- See examples of function being used!
+
+```{r, eval = FALSE}
+example('round')
+```
+
+
+
+## The 'combine' function
+
+What are the inputs and outputs?
+
+```{r}
+glengths <- c(4.6, 3000, 580)
+```
+
+
+
+## User-defined functions (a simple example)
+
+```{r}
+add_two_numbers <- function(num1, num2) {
+  result <- num1 + num2
+  return(result)
+}
+add_two_numbers(1, 2)
+```
+
+
+## User-defined functions (the general pattern)
+
+```{r, eval = FALSE}
+name_of_function <- function(argument1, argument2) {
+    *statements or code that does something*
+    return(some_data)
+}
+```
+
+-Assign it a name
+
+-List arguments
+
+-Use curly braces to wrap text that performs some action on any inputs
+
+-(Optionally) 'return' a value from the function
+
+
+
+## Making 'optional' inputs
+
+```{r}
+center_vec <- function(data_vec, midpoint = 0) {
+  new_data_vec <- (data_vec - mean(data_vec)) + midpoint
+  return(new_data_vec)
+}
+test_vec <- 1:10
+center_vec(test_vec, midpoint = 10)
+center_vec(test_vec)
+```
+
+**Practice**
+
+
+## Returning values
+
+- What does this do? 
+
+```{r}
+center_vec <- function(data_vec, midpoint = 0) {
+  new_data <- (data_vec - mean(data_vec)) + midpoint
+}
+```
+
+
+## Packages
+
+- Collections of functions, and data, designed to add specific functionality beyond 'base R'
+
+- Need to install before you can use (only do this once)
+
+```{r, eval = FALSE}
+install.packages('tidyverse')
+```
+
+- Load the package into your R session (do this every session)
+
+```{r, eval = FALSE}
+library(tidyverse)
+```
+
+```{r, include = FALSE}
+library(tidyverse)
+```
+
+
+## Getting help with packages
+
+- Use the `help` function
+
+```{r}
+help(package = 'lubridate')
+```
+
+- Use the 'Packages` tab in Rstudio
+
+  - Also shows available and loaded packages.
+  
+**Practice**
+
+
+## Quick note on Bioconductor
+
+- CRAN is the default shop for R packages
+
+- Bioconductor is another that has many useful bioinformatics related packages
+
+<center>
+<img src="../images/bioconductor_logo.png" width="40%">
+</center>
+
+```{r, eval = FALSE}
+install.packages("BiocManager")
+BiocManager::install("GenomicRanges")
+```
+
+- Once installed they're just like other packages
+
+```{r, eval = FALSE}
+library(GenomicRanges)
+```
+
+
+## Word of warning about function names
+
+- Multiple packages can have the same names for different functions.
+
+- Which one R thinks you're using in a given instance can be hard to know.
+
+- Cause of **many** painful 'bugs'
+
+- When in doubt it's best to specify which package the function comes from:
+
+```{r, eval = FALSE}
+lubridate::here()
+here::here()
+```
+
+
+## Getting more help
+
+- Pay attention to error messages and warning messages
+
+- Using Google 
+
+  - Search error messages verbatim (but remove stuff specific to your usage).
+  
+  - Add "r" "error"
+
+- Stackoverflow
+
+
+**More function practice**
+
+## Key concepts recap
+
+- `output <- do_a_thing(input_obj, param1 = my_val)`
+
+```{r, eval = FALSE}
+do_a_thing <- function(input_obj, param1) {
+  **STUFF**
+  return(result)
+}
+```
+
+- get ?help
+
+- `install.packages()` and `library()` to install/use packages

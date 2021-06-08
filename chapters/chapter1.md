@@ -1,8 +1,7 @@
 ---
 title: 'Chapter 1: Getting started'
 description:
-  'This chapter will teach you about many cool things and introduce you to the
-  most important concepts of the course.'
+  'This chapter the basics of R programming including using the fundamental data structures'
 prev: null
 next: /chapter2
 type: chapter
@@ -16,31 +15,14 @@ id: 1
 
 </exercise>
 
-<exercise id="2" title="Getting Started">
 
-Let's ask some questions about the slides. Whats the correct answer?
+<exercise id="2" title="R Basics">
 
-<choice>
-<opt text="Answer one">
-
-This is not the correct answer.
-
-</opt>
-
-<opt text="Answer two" correct="true">
-
-Good job!
-
-</opt>
-
-<opt text="Answer three">
-
-This is not correct either.
-
-</opt>
-</choice>
+<slides source="chapter1_02_R_basics">
+</slides>
 
 </exercise>
+
 
 <exercise id="3" title="First steps">
 

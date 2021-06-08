@@ -1,0 +1,402 @@
+---
+title: "Into the tidyverse"
+author: James McFarland
+date: 2019-10-25
+output: 
+  ioslides_presentation:
+    transition: faster
+    highlight: haddock
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Intro to the tidyverse
+
+<img src="../images/tidyverse_website.png">
+
+https://ismayc.github.io/talks/ness-infer/slide_deck.html#13
+
+
+## Gapminder package
+
+```{r, include = FALSE}
+library(tidyverse)
+```
+
+
+```{r}
+#install.packages('gapminder')
+library(gapminder)
+gapminder
+```
+
+
+## Verbs of data wrangling
+
+- Data-wrangling generally involves sequential application of the following 'verbs' to the data: 
+
+  - `filter`
+  
+  - `select`
+  
+  - `arrange`
+  
+  - `mutate`
+  
+  - `summarise`
+  
+  - `group-by`
+
+
+## Pipes
+
+<img src="../images/pipe.png">
+
+- Chain together multiple commands
+
+```{r, eval = FALSE}
+my_data %>% function1() %>% function2()
+```
+
+
+- Read as 'and then' when reading code
+
+- Keyboard shortcut: shift + command + M
+
+
+
+## Pipes example:
+
+Mean life-expectancy across all years for Asia:
+
+```{r}
+# Base R
+asia <- gapminder[gapminder$continent == "Asia", ]
+mean(asia$lifeExp)
+```
+
+```{r}
+#dplyr
+gapminder %>% 
+  filter(continent == "Asia") %>%
+  summarize(mean_exp = mean(lifeExp))
+```
+
+
+## Note on pipes
+
+Pipes aren't specific to dplyr and tibble manipulation. You can also use them to chain together any commands together in R
+
+```{r, eval = FALSE}
+## Base R method of running more than one command
+round(sqrt(83), digit = 2)
+
+#or create an intermediate variable
+sqrt_num <- sqrt(83)
+round(sqrt_num, digit = 2)
+
+## Running more than one command with piping
+sqrt(83) %>% round(digit = 2)
+
+#or even:
+83 %>% sqrt() %>% round(digit = 2)
+```
+
+
+
+## Filter
+
+- Select a subset of the rows from a tibble
+
+- Arguments are the 'filters' you'd like to apply
+
+```{r}
+gap_2007 <- gapminder %>% filter(year == 2007)
+head(gap_2007, 4)
+```
+
+- Use `==` to pick rows with variable equal to a specified value.
+
+## Logical operators for filtering
+
+- Use `,` to check for multiple filters being true ('AND')
+
+```{r}
+gapminder %>% 
+  filter(year == 2002, continent == "Asia") %>% 
+  sample_n(4)
+```
+
+
+## Logical operators for filtering
+
+- Use `|` to check for any in multiple filters being true ('OR')
+
+```{r}
+gapminder %>% 
+  filter(year == 2002 | continent == "Asia") %>% 
+  sample_n(4)
+```
+
+
+## Logical operators for filtering
+
+- Use `%in%` to check if value is contained in a specified set
+
+```{r}
+gapminder %>% 
+  filter(country %in% c("Argentina", "Belgium", "Mexico"),
+         year %in% c(1987, 1992))
+```
+
+
+**Practice**
+
+
+## Select {.smaller}
+
+- Use `select` to pick a subset of columns by name
+
+```{r}
+gapminder %>% 
+  select(country, year, lifeExp) %>% 
+  head(4)
+```
+
+- Select columns with 'improper' names using back-ticks (NOT single quotes):
+```{r, eval = FALSE}
+df %>% select(`1999`, `badly named variable`)
+```
+
+## Rename
+
+- Use `rename` to rename certain columns
+
+```{r}
+gapminder %>% 
+  rename(lifeExpectancy = lifeExp) %>% 
+  head(3)
+```
+
+- You can rename multiple columns at once
+
+```{r, eval = FALSE}
+gapminder %>% 
+  rename(lifeExpectancy = lifeExp, population = pop)
+```
+
+
+
+## Arrange
+
+- Reorder rows based on the values of one or more variables
+
+```{r}
+gapminder %>% 
+  arrange(year) %>% 
+  head(4)
+```
+
+## Arrange
+
+- Sorting by multiple variables
+
+```{r}
+gapminder %>% 
+  arrange(year, lifeExp) %>% 
+  head(4)
+```
+
+
+## Desc
+
+- Can also sort in descending order
+
+```{r}
+gapminder %>%
+  filter(year > 2000) %>%
+  arrange(desc(country)) %>%
+  head(4)
+```
+
+**Practice**
+
+
+## Mutate
+
+- **create a new variable with a specific value** OR
+- create a new variable based on other variables OR
+- change the contents of an existing variable
+  
+```{r}
+gapminder %>% 
+  mutate(just_one = 1) %>% 
+  head(4)
+```
+
+## Mutate
+
+- create a new variable with a specific value OR
+- **create a new variable based on other variables** OR
+- change the contents of an existing variable
+  
+```{r}
+gapminder %>%
+  mutate(gdp = pop * gdpPercap) %>% 
+  head(4)
+```
+
+
+## Mutate
+
+- create a new variable with a specific value OR
+- create a new variable based on other variables OR
+- **change the contents of an existing variable**
+  
+```{r}
+gapminder %>%
+  mutate(pop = pop/1e6) %>% 
+  head(4)
+```
+
+
+**Practice**
+
+
+## Summarise
+
+- Apply a numerical summary to a column of a table
+
+```{r}
+gapminder %>% 
+  filter(year == 1997) %>% 
+  summarize(max_exp = max(lifeExp),
+            sd_exp = sd(lifeExp))
+```
+
+- Works with any functions that take a vector as input and return a single value
+
+
+## Group-by
+
+- Combined with `summarise`, `group_by` allows you to summarise data for each possible value of a categorical variable
+
+```{r}
+gapminder %>% 
+  filter(year == 1997) %>% 
+  group_by(continent) %>%
+  summarize(max_exp = max(lifeExp),
+            sd_exp = sd(lifeExp))
+```
+
+## Group-by {.smaller}
+
+- Can be applied to combinations of variables
+
+```{r}
+gapminder %>% 
+  group_by(continent, year) %>%
+  summarize(num_rows = n(),
+            max_exp = max(lifeExp),
+            sd_exp = sd(lifeExp)) %>% 
+  head(4)
+```
+
+- `n()` function counts number of rows in each group
+
+**Practice**
+
+
+## Combining data tables
+
+- Concatenate by rows (assume same columns)
+
+- Concatenate by columns (assume same rows)
+
+- Merge (`join`) tables with different kinds of info.
+
+
+## Row concatenation {.smaller}
+
+`bind_rows`
+
+```{r}
+#split gapminder table into two single-year tables
+gpmind_1962 <- gapminder %>% filter(year == 1962)
+gpmind_1972 <- gapminder %>% filter(year == 1972)
+gpmind_1977 <- gapminder %>% filter(year == 1977)
+
+#combine them by pasting together rows
+gpmind_row_comb <- bind_rows(gpmind_1962, gpmind_1972, gpmind_1977)
+gpmind_row_comb %>% 
+  group_by(year) %>% 
+  summarise(n = n())
+```
+
+
+## Column concatenation {.smaller}
+
+```{r}
+#split gapminder table into two single-year tables
+gpmind_loc <- gapminder %>% select(country, continent)
+gpmind_data <- gapminder %>% select(lifeExp, pop, gdpPercap)
+
+head(gpmind_loc, 3)
+
+head(gpmind_data, 3)
+
+```
+
+---
+
+- `bind_cols` pastes together the columns
+
+```{r}
+bind_cols(gpmind_data, gpmind_loc) %>% 
+  head(3)
+```
+
+- This is dangerous (don't do it)!! Assumes the rows are aligned..
+
+
+## Merging tables 
+
+- Say we have a table of country 'codes', and we want to add this information to our gapminder table
+
+```{r}
+country_codes %>% 
+  head(4)
+```
+
+- Not easy if we were to try to use `bind_cols`!
+
+
+## Use a `join` {.smaller}
+
+```{r}
+gapminder %>% 
+  left_join(country_codes, by = 'country') %>% 
+  head(4)
+```
+
+## Elements of a join:
+
+- Need to have (at least) one variable in common between two tables
+
+  -Specify this variable (or set of variable) in the 'by' argument
+  
+- Need to specify how you want it to handle matches
+
+<img src="../images/sql-joins.png">
+
+
+
+
+## Recap
+
+<img src="../images/dplyr_visual.png" width="100%">
+
+(google 'dplyr cheat sheet')
+[Cheat sheet](https://4.files.edl.io/b9e2/07/12/19/142839-a23788fb-1d3a-4665-9dc4-33bfd442c296.pdf)

@@ -1,0 +1,339 @@
+---
+title: "Further topics"
+author: James McFarland
+date: 2019-10-29
+output: 
+  ioslides_presentation:
+    transition: faster
+    highlight: haddock
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE)
+```
+
+```{r, include = FALSE}
+library(tidyverse)
+library(useful)
+library(gapminder)
+gapminder <- gapminder %>% 
+  mutate(country = as.character(country),
+         continent = as.character(continent))
+```
+
+## Overview
+
+- Some tips
+
+- Some stats
+
+- 'For loops', and `purrr`
+
+
+## Practical advice (Rstudio) {.smaller}
+
+- Set up an Rstudio 'project' for each project
+
+  - separate folders for `data`, `code` and `results`
+  
+  - If need to load data from elsewhere: use the `Import Dataset` tool
+
+- Write analysis like an experiment notebook using .Rmd
+  
+  - Comments! 
+
+  - Share as html (or pdf)
+
+  - Look for examples you like and use as templates (e.g. `depmap_demo.Rmd`)
+
+  - See the [RMarkdown cheatsheet](https://rstudio.com/wp-content/uploads/2015/02/rmarkdown-cheatsheet.pdf)
+
+
+## Practical advice (coding) {.smaller}
+
+
+- If you're redoing the same thing many times, use a function
+
+- `tidy` data provides a consistent framework that works with `tidyverse` tools
+
+- Making plots: `ggplot` -- Look for examples [online](https://www.r-graph-gallery.com/index.html) and copy the code!
+
+- Google:
+  - 'how do I XX in R'
+  - 'R error XX'
+
+- Use version control `git`
+
+
+## Formatting tables {.smaller}
+
+```{r}
+library(DT)
+datatable(gapminder)
+```
+
+
+
+## Usesful statistical tests in R
+
+- `wilcox.test()` Wilcoxon rank sum test
+
+- `t.test()` t-test (one or two-sample)
+
+- `cor.test()` test whether correlation is significant (Pearson or Spearman)
+
+- `lm()` linear model
+
+- `aov()`, `anova()` ANOVA (analysis of variance)
+
+
+## Linear regression {.smaller}
+
+- `dep_var = a * ind_var + b`
+
+- Use funky 'formula' notation: dep_var ~ ind_var
+
+```{r, include = FALSE}
+gap_77 <- gapminder %>% filter(year == 1977)
+```
+
+```{r}
+mod <- lm(lifeExp ~ gdpPercap, data = gap_77) 
+```
+
+```{r}
+summary(mod) 
+```
+
+## Linear regression {.smaller}
+
+- `dep_var = a * ind_var + b`
+
+- Specifying the 'intercept' term explicitly: 
+
+```{r}
+mod <- lm(lifeExp ~ 1 + gdpPercap, data = gap_77) 
+```
+
+- Without the 'intercept' term:
+
+```{r}
+mod <- lm(lifeExp ~ 0 + gdpPercap, data = gap_77) 
+```
+
+
+## Linear regression {.smaller}
+
+- Add more explanatory variables with `+`
+
+```{r}
+mod <- lm(lifeExp ~ gdpPercap + pop, data = gap_77) 
+summary(mod) 
+```
+
+
+## Linear regression {.smaller}
+
+- Works easily with categorical variables
+
+```{r}
+mod <- lm(lifeExp ~ continent, data = gap_77) 
+summary(mod)
+```
+
+## Linear regression {.smaller}
+
+- Can include 'interaction' terms
+
+```{r}
+mod <- lm(lifeExp ~ gdpPercap * continent, data = gap_77) 
+summary(mod)
+```
+
+
+## ANOVA {.smaller}
+
+```{r}
+mod <- aov(lifeExp ~ continent, data = gap_77)
+summary(mod)
+TukeyHSD(mod)
+```
+
+
+## For loop {.smaller}
+
+```{r, eval = FALSE}
+for (element in vector) {
+  ** DO STUFF**
+}
+```
+
+
+```{r}
+x <- c(2,5,3,9,8,11,6)
+count <- 0
+for (val in x) {
+  count <- count + val
+}
+print(count)
+```
+
+## We've been using them (implicitly)
+
+```{r}
+sum(x)
+```
+
+```{r}
+x + 1
+```
+
+
+
+## If statement {.smaller}
+
+```{r, eval = FALSE}
+if (logical_statement) {
+  **DO SOMETHING**
+}
+```
+
+
+```{r}
+x <- c(2,5,3,9,8,11,6)
+count <- 0
+for (val in x) {
+  if (val %% 2 == 0) {
+    count = count+1
+  }
+}
+print(count)
+```
+
+## Example loop {.smaller}
+
+Let's compute the median life expectancy for each country in gapminder
+
+```{r}
+unique_countries <- unique(gapminder$country) #list to iterate over
+
+med_lifeExp <- vector('numeric', length(unique_countries))
+names(med_lifeExp) <- unique_countries
+for (cur_country in unique_countries) {
+     med_lifeExp[cur_country] <- gapminder %>% 
+        filter(country == cur_country) %>% 
+        pull(lifeExp) %>% 
+        median()
+}
+head(med_lifeExp)
+```
+
+
+## purrr {.smaller}
+
+Tidyverse tools for doing `for loops`
+
+```{r, eval = FALSE}
+result <- map(vector, function)
+```
+
+- `map()`: returns a list
+
+- `map_chr()`, `map_int()`, `map_dbl()` and `map_lgl()`: returns a vector of this type (or die trying)
+
+- `map_dfr()` and `map_dfc()` combine results into a dataframe (by row or column)
+
+
+## Example with purrr
+
+```{r}
+get_country_median <- function(cur_country) {
+  cur_result <- gapminder %>% 
+    filter(country == cur_country) %>% 
+    pull(lifeExp) %>% 
+    median()
+  return(cur_result)
+}
+med_lifeExp <- map_dbl(unique_countries, get_country_median)
+```
+
+
+## Often a better way {.smaller}
+```{r}
+gapminder %>% 
+  group_by(country) %>% 
+  summarise(median = median(lifeExp))
+```
+
+
+## apply
+
+- Apply summary function to each row/column of matrix
+
+```{r, eval = FALSE}
+result <- apply(matrix, MARGIN, function, extra_arguments) 
+```
+
+- MARGIN = 1 (rows) or 2 (columns)
+
+## apply example {.smaller}
+
+```{r, include = FALSE}
+RNAseq_mat <- read_csv(here::here('data', 'CCLE_expression_subset.csv')) %>% 
+  column_to_rownames(var = 'X1')
+```
+
+```{r}
+gene_medians <- apply(RNAseq_mat, 2, median, na.rm=TRUE)
+head(gene_medians, 5)
+```
+
+## apply with custom functions
+
+Functions must take a vector and return a number
+
+```{r}
+get_squared_median <- function(vec) {
+  return(median(vec)^2)
+}
+apply(RNAseq_mat, 2, get_squared_median) %>% head(5)
+```
+
+## scale (column-wise normalization) {.smaller}
+
+- 'z-score' normalization is common for matrices
+
+- Subtract off mean of each column
+
+- Divide by its standard deviation
+
+```{r, eval = FALSE}
+new_mat <- scale(mat, center, scale)
+```
+
+- `center` and `scale` can be either TRUE/FALSE, or a vector to be 'subtracted' or 'scaled' by
+
+## scale example
+
+- mean subtraction
+
+```{r}
+norm_RNAseq <- scale(RNAseq_mat, center = TRUE, scale = FALSE)
+```
+
+- median subtraction
+
+```{r}
+gene_medians <- apply(RNAseq_mat, 2, median, na.rm=TRUE)
+norm_RNAseq <- scale(RNAseq_mat, center = gene_medians, scale = FALSE)
+```
+
+## Thanks!
+
+More cheat-sheet refs:
+
+[Rstudio2019](https://rstudio.com/wp-content/uploads/2019/01/Cheatsheets_2019.pdf)
+
+[BaseR](https://rstudio.com/wp-content/uploads/2016/10/r-cheat-sheet-3.pdf)

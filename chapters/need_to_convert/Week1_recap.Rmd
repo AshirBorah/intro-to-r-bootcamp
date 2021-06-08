@@ -1,0 +1,161 @@
+---
+title: "Week 1 Recap"
+output: 
+  ioslides_presentation:
+    transition: faster
+    highlight: haddock
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Data types
+
+- Vector
+
+- List
+
+- Matrix
+
+- Dataframe
+
+## Functions
+
+```{r, eval = FALSE}
+my_function <- function(input1, input2) {
+  ...
+  return(result)
+}
+```
+
+```{r, eval = FALSE}
+new_stuff <- my_function(stuff1, stuff2)
+```
+
+
+## Loading data
+
+- Text files (comma-separated: `csv`, tab-separated: `tsv`)
+
+- Reading matrices:
+
+  -Use `read.csv`, `read.table`
+  
+- Reading table:
+
+  -Use `read_csv`, `read_tsv`
+
+- You can always rely on 'Import Dataset' tool in Rstudio!
+
+- Use `here` function to help manage file paths
+
+```{r, eval = FALSE}
+df <- read_csv(here::here('data', 'my_file.csv'))
+```
+
+
+## Saving data
+
+- Use the reverse of data loading process
+
+  - `write.csv`, `write_csv`, etc.
+  
+```{r, eval = FALSE}
+write_csv(df, here::here('results', 'my_file.csv'))
+```
+
+
+
+## Getting data from a vector
+
+- Select data by index:
+
+```{r, eval = FALSE}
+idx <- c(2, 5, 2)
+vec_sub <- vec[idx]
+```
+
+- Select data by logical vector:
+
+```{r, eval = FALSE}
+log_idx <- vec > 5
+vec_sub <- vec[log_idx]
+```
+
+- Select data by name:
+
+```{r, eval = FALSE}
+name_idx <- c('first_thing', 'second_thing')
+vec_sub <- vec[name_idx]
+```
+
+
+## Getting data from matrices
+
+- Just like subsetting a vector, but subset both rows and columns
+
+```{r, eval = FALSE}
+mat_sub <- mat[row_idx, col_idx]
+```
+
+- Can leave either row-index, or column-index blank to 'select-all'
+
+```{r, eval = FALSE}
+mat_subrows <- mat[row_idx, ]
+mat_subcols <- mat[, col_idx]
+```
+
+
+## Getting data from dataframe
+
+- Access one column's worth of data with `$` or 'double-bracket':
+
+```{r, eval = FALSE}
+df_sub <- df$my_column
+df_sub <- df[['my_column']]
+```
+
+- You can access subset of rows treating like a matrix:
+
+```{r, eval = FALSE}
+df_rowsub <- df[row_idx, ]
+```
+
+- But, **highly** recommend you use `dplyr` to manipulate dataframes
+
+
+
+## Dplyr dataframe wrangling
+
+- Key verbs:
+
+  - `Filter`: subset rows
+  
+  - `Select`: subset columns
+  
+  - `Arrange`: sort rows
+  
+  - `Mutate`: add/change column values
+  
+  - `Summarise`: summarise data across rows
+  
+  - `Group_by`: group data rows by value to perform grouped-summaries
+
+## Combining tables
+
+- Concatenate rows: `row_bind(df1, df2, ...)`
+
+- Concatenate columns: `col_bind(df1, df2, ...)`
+
+  - Be careful!
+  
+- Merge tables with a `join`!
+
+  - `inner_join`
+  
+  - `full_join`
+  
+  - `left_join`
+  
+  - `right_join`

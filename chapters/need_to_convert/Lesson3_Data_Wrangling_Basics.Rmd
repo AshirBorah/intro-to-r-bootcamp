@@ -1,0 +1,567 @@
+---
+title: "Lesson3: Data Wrangling Basics"
+author: James McFarland
+date: 2019-10-25
+output: 
+  ioslides_presentation:
+    transition: faster
+    highlight: haddock
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE)
+library(tidyverse)
+require(useful) #this will install the package if you haven't yet, and just load it if you have 
+```
+
+
+## Outline
+
+- Loading and inspecting data
+
+- Working with vectors
+
+- Working with matrices
+
+- Working with dataframes (the old way)
+
+
+## Basics of data formats {.smaller}
+
+- Data are typically stored as text files
+
+- Different 'rows' of data appear on different lines
+
+- Values for a given 'row' are typically separated by either a comma, or a tab
+
+ Comma-separated values (.csv)
+ 
+```{r, eval = FALSE}
+name,age,member_since
+bob,20,2015
+frank,40,2015
+tammy,15,2016
+```
+
+Tab-separated values (.tsv or .txt)
+
+```{r, eval = FALSE}
+name  age  member_since
+bob  20  2015
+frank  40  2015
+tammy  15  2016
+```
+
+
+## Loading data into R
+
+| Data type               | Extension | Function          | Package            |
+|:------------------------|:----------|:------------------|:-------------------|
+| Comma separated values  | csv       | `read.csv()`      | utils (default)    |
+|                         |           | `read_csv()`      | readr (tidyverse)  |
+| Tab separated values    | tsv       | `read_tsv()`      | readr              |
+| Other delimited formats | txt       | `read.table()`    | utils              |
+|                         |           | `read_table()`    | readr              |
+|                         |           | `read_delim()`    | readr              |
+| Excel                   | xlsx, xls | `read_excel()`    | readxl (tidyverse) |
+
+
+## Which read function should I use? (old)
+
+- For reading data tables use:
+  - `read_csv`/`read_tsv` from the `readr` package (`tidyverse`)
+  
+  - This avoids some very annoying default R behavior (changing names, making strings into factors)
+
+- For reading matrices, use:
+ 
+  - `read.csv`/`read.table` (baseR)
+  
+  - This allows you to use rownames, which are very useful for working with matrices
+    
+    
+## Which read function should I use? (new)
+
+- Always use `read_csv`/`read_tsv` from the `readr` package (`tidyverse`)
+  
+- For reading matrices, use the function `column_to_rownames` to specify which column should be treated as rownames 
+ 
+  
+## Specifying where a file 'is' {.smaller}
+
+- Relative and absolute file 'paths'
+
+```{r}
+getwd()
+```
+
+- Organize project with a 'data' folder for data. 
+
+- Use the `here` function to specify the file path.
+
+```{r, eval = FALSE}
+imported_data <- read_csv("/Users/jmmcfarl/BootCamp/R_BootCamp_2019/
+                          data/data_file.csv")
+```
+
+```{r, eval = FALSE}
+imported_data <- read_csv(here::here('data', 'data_file.csv')
+```
+
+
+
+
+## For example {.smaller}
+
+Load a tab-delimited table of metadata
+
+```{r, eval = FALSE}
+my_table <- read_tsv(here::here('data', 'my_metadata_table.tsv'))
+```
+
+Load the second sheet from an xlsx file
+
+```{r, eval = FALSE}
+my_table <- read_excel(here::here('data', 'my_metadata_file.xlsx'), sheet = 2)
+```
+
+## Loading matrices {.smaller}
+
+```{r}
+counts_matrix <-  read_tsv(here::here('data', 'normalized_counts.txt'))
+corner(counts_matrix)
+```
+
+```{r}
+counts_matrix <- column_to_rownames(counts_matrix, var = 'X1')
+corner(counts_matrix)
+```
+
+
+
+## Inspecting data {.smaller}
+
+- Always start with some quick inspection of data after reading it into R
+
+- Check for:
+
+  - Column (always) and row (matrix only) names are correct
+  
+  - Make sure data types of columns are correct
+
+- Dataframe:
+  - `View(df)`: Open spreadsheet viewer
+  - `head(df)`: Show top K (10) rows
+  - `glimpse(df)`: quick overview of a table 
+
+- Matrix:
+  - `useful::corner(mat)`: Show upper left corner of matrix
+  - `dim(mat)`: Number of rows and columns 
+  - `rownames(mat)`/`colnames(mat)`: extract row/column names
+
+**Practice**
+
+
+## Backup plan
+
+- Importing files using the RStudio `Import Dataset` tool.
+
+
+
+## Accessing data? Let's start with a vector {.smaller}
+
+```{r}
+age <- c(15, 22, 45, 52, 73, 81)
+```
+
+<img src="../images/vector-index.png">
+
+```{r}
+age[5]
+```
+
+```{r}
+idx <- c(3,5,6) # create vector of the elements of interest
+age[idx]
+```
+
+
+
+## Selecting elements with logical statements {.smaller}
+
+| Operator | Description |
+| :-----------:|:-------------|
+| > | greater than |
+| >= | greater than or equal to|
+| < | less than |
+| <= | less than or equal to |
+| == | equal to |
+| != | not equal to |
+| & | and |
+| \| |or |
+
+---
+
+<img src="../images/vector-index.png">
+
+```{r}
+age > 50
+```
+
+```{r}
+log_idx <- age > 50
+age[log_idx]
+#same as age[age > 50]
+```
+
+--- 
+
+<img src="../images/vector-index.png">
+
+```{r}
+age == 52
+```
+
+```{r}
+age[age == 52]
+```
+
+```{r}
+age[age != 52]
+```
+
+
+## Subsetting using names {.smaller}
+
+```{r}
+age <- c(Allice = 15, Bob = 22, Charlie = 45, Dan = 52)
+age
+```
+
+```{r}
+names(age)
+```
+
+
+```{r}
+age[c('Bob', 'Charlie')]
+```
+
+- Most useful when working with lists (more to come)
+
+
+## Brief asside on NULL
+
+R has another special value `NULL` which represents 'the absence of a value'. 
+
+For example
+```{r}
+my_vec <- c(1,2,3)
+names(my_vec)
+```
+
+Note: Subtly different from `NA`, but don't worry about that now.
+
+
+## Reordering data
+
+```{r}
+x <- c(4, 2, 3, 5, 1)
+sort(x)
+```
+
+- Or in decreasing order
+```{r}
+sort(x, decreasing = TRUE)
+```
+
+
+## Reordering using indexing
+
+- Indexing can also be used to reorder data
+
+```{r}
+teaching_team <- c("Mary", "Meeta", "Radhika")
+```
+
+```{r}
+reorder_teach <- teaching_team[c(3, 1, 2)] # Saving the results to a variable
+reorder_teach
+```
+
+
+**Practice**
+
+
+
+## Subsetting matrices
+
+- Same as subsetting vectors, but can be applied to both rows and columns!
+
+- General formula:
+
+```{r, eval = FALSE}
+matrix[row_set, column_set]
+```
+
+- `row_set` and `column_set` can be individual elements or vectors
+
+- Leave either blank if you want all rows/columns, e.g.:
+
+```{r, eval = FALSE}
+matrix[row_set, ]
+matrix[, column_set]
+```
+
+## Matrix subsetting examples
+
+```{r}
+counts_mat <- read_csv(here::here('data', 'counts_rpkm.csv'))
+counts_mat <- column_to_rownames(counts_mat, var = 'X1')
+useful::corner(counts_mat)
+```
+
+---
+
+- 'Slice' out one row
+
+```{r}
+counts_mat[3, ]
+```
+
+---
+
+- Or slice out a single column 
+
+```{r}
+counts_mat[, 3]
+```
+
+---
+
+- Slice a set of rows and set of columns
+```{r}
+counts_mat[1:4, 2:3]
+```
+
+## Using rownames and column names 
+
+- Use `colnames(mat)` and `rownames(mat)` to get the column and rownames of a matrix.
+
+- Data for a list of rows (genes)
+
+```{r}
+counts_mat[c('ENSMUSG00000000028', 'ENSMUSG00000000037'), ]
+```
+
+--- 
+
+- Specifying columns and rows by name
+```{r}
+counts_mat['ENSMUSG00000000001', c('sample7', 'sample5')]
+```
+
+
+
+## The %in% operator
+
+- Check whether each element of vector1 is contained in the set vector2
+
+```{r}
+A <- c(1, 2, 3, 4)   
+B <- c(3, 4, 5, 6)  
+
+A %in% B
+```
+
+
+## Applications of %in% {.smaller}
+
+- Useful for restricting to the intersection of elements in two lists
+```{r}
+A <- c(1, 2, 3, 4)   
+B <- c(3, 4, 5, 6)  
+
+A[A %in% B]
+```
+
+- Or checking whether any/all elements of A are contained in B
+
+```{r}
+any(A %in% B)
+all(A %in% B)
+```
+
+## Other 'set' functions
+
+- `intersect(A, B)`: return the elements in both `A` and `B`
+
+- `setdiff(A, B)`: return the elements in `A` that are not in `B`
+
+- `union(A, B)`: return the elements in either `A` or `B`
+
+
+
+**Practice**
+
+
+## Inspecting data visually
+
+```{r, include = FALSE}
+counts_mat <- read_csv(here::here('data', 'counts_rpkm.csv'))
+counts_mat <- column_to_rownames(counts_mat, var = 'X1')
+counts_mat <- as.matrix(counts_mat)
+```
+
+```{r, fig.width=5, fig.height = 4}
+x <- counts_mat['ENSMUSG00000081010',] 
+hist(x)
+```
+
+--- 
+
+```{r,  fig.width=5, fig.height = 4}
+y <- counts_mat['ENSMUSG00000000037',]
+plot(x,y)
+```
+
+
+
+
+## Subsetting lists {.smaller}
+
+```{r}
+people <- list(
+  Allice = list(age = 20, height = 50, school = 'MIT'),
+  Bob = list(age = 10, height = 30, school = 'Harvard'),
+  Charlie = list(age = 40, height = 60, school = 'BU'),
+  Frank = c(age = 10, height = 2)
+  )
+```
+
+- To select a specific element from the list use 'double brackets'
+
+```{r}
+people[[2]]
+```
+
+
+
+## Subsetting lists {.smaller}
+
+- With lists it's especially useful to access elements by name
+
+```{r}
+people[['Bob']]
+```
+
+- Another (equivalent) way is to use the `$` symbol. This is nice because it works with 'tab-complete'
+
+```{r, eval = FALSE}
+people$Bob
+```
+
+## Nested indexing of lists
+
+- You can use multiple indices to pull out specific elements nested within a list
+
+```{r}
+people[['Allice']][['school']]
+```
+
+- Using `$` makes it much easier to read
+
+```{r}
+people$Allice$height
+```
+
+**Practice**
+
+
+
+## Creating dataframes {.smaller}
+
+
+```{r}
+species <- c("ecoli", "human", "corn")
+glengths <- c(4.6, 3000, 50000)
+```
+
+- Create a tibble (dataframe, table) using `tibble()` function. 
+
+- Input as many columns as you want (must have same length)
+
+```{r}
+df <- tibble(species, glengths)
+df
+```
+
+---
+
+- Can name the columns
+
+```{r}
+df <- tibble(animal_species = species, genome_lengths = glengths)
+df
+```
+
+
+## Quick note on new/old ways 
+
+- `data.frame()` is the old way, gives a similar table
+
+```{r}
+df <- data.frame(species = species, glengths = glengths)
+df
+```
+
+- But it makes strings into 'factors', and has some other subtle differences. 
+
+- Use `tibble()`
+
+
+## Subsetting dataframes (columns)
+
+```{r, include = FALSE}
+df <- tibble(species, glengths)
+```
+
+- You can access a column from a dataframe as if it were a list of vectors (it is):
+
+```{r}
+df$species
+df[['species']]
+```
+
+## Subsetting dataframes (rows)
+
+- You can access rows and columns of dataframes like matrix indexing
+
+```{r}
+df[2,]
+```
+
+```{r}
+df[2:3, 'glengths']
+```
+
+
+## Saving data to a file
+
+- Just like the inverse of reading data
+
+- `write_csv` to save tables
+
+- `write.csv` to save matrices
+
+- Use `here` function to specify the path to save the file
+
+```{r}
+write_csv(df, here::here('results', 'my_dataframe.csv'))
+```
+
+**Practice**
+
+
+## Key concepts recap
+
