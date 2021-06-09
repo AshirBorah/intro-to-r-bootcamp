@@ -1,5 +1,7 @@
 # Online course starter: R
 
+[![Netlify Status](https://api.netlify.com/api/v1/badges/91dcb5d9-0e77-4603-ab59-c72f6cd537e3/deploy-status)](https://app.netlify.com/sites/competent-lewin-2199f3/deploys)
+
 This is a starter repo based on the
 [course framework](https://github.com/ines/spacy-course) I developed for my
 [spaCy course](https://course.spacy.io). The front-end is powered by
